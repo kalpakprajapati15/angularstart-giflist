@@ -45,27 +45,24 @@ export class RedditService {
   lastKnownGif = computed(() => this.state().lastKnownGif);
 
   //sources
-  pagination$ = new Subject<void>();
+  pagination$ = new Subject<string | null>();
   private error$ = new Subject<string | null>();
 
   private subredditChanged$ = this.subredditFormControl.valueChanges.pipe(
     debounceTime(300),
     distinctUntilChanged(),
     startWith('gifs'),
-    map((val) => {
-      val = val || 'gifs';
-      return val;
-    })
+    map((subreddit) => (subreddit.length ? subreddit : 'gifs'))
   );
 
   private gifsLoaded$ = this.subredditChanged$.pipe(
     switchMap((subreddit) =>
       this.pagination$.pipe(
-        startWith(undefined),
-        concatMap(() => {
+        startWith(null),
+        concatMap((lastKnownGif) => {
           return this.fetchFromReddit(
             subreddit,
-            this.lastKnownGif(),
+            lastKnownGif,
             this.gifsPerPage
           ).pipe(
             // A single request might not give us enough valid gifs for a
@@ -141,12 +138,13 @@ export class RedditService {
         }),
         map((response) => {
           const posts = response.data.children;
-          const lastKnownGif = posts.length
+          let gifs = this.convertRedditPostsToGifs(posts);
+          let lastKnownGif = posts.length
             ? posts[posts.length - 1].data.name
             : null;
 
           return {
-            gifs: this.convertRedditPostsToGifs(posts),
+            gifs,
             gifsRequired,
             lastKnownGif,
           };
