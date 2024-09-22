@@ -32,7 +32,7 @@ import { WINDOW } from 'src/app/shared/utils/injection-tokens';
     } @empty {
     <p data-testid="no-gifs">Can't find any gifs 🤷</p>
     }
-  `,
+    `,
   imports: [
     CommonModule,
     GifPlayerComponent,

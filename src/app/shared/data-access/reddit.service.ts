@@ -1,7 +1,6 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Gif, RedditPost, RedditResponse } from '../interfaces';
 import { FormControl } from '@angular/forms';
 import {
   EMPTY,
@@ -13,8 +12,9 @@ import {
   expand,
   map,
   startWith,
-  switchMap,
+  switchMap
 } from 'rxjs';
+import { Gif, RedditPost, RedditResponse } from '../interfaces';
 
 export interface GifsState {
   gifs: Gif[];
@@ -51,7 +51,11 @@ export class RedditService {
   private subredditChanged$ = this.subredditFormControl.valueChanges.pipe(
     debounceTime(300),
     distinctUntilChanged(),
-    startWith('gifs')
+    startWith('gifs'),
+    map((val) => {
+      val = val || 'gifs';
+      return val;
+    })
   );
 
   private gifsLoaded$ = this.subredditChanged$.pipe(
@@ -79,10 +83,10 @@ export class RedditService {
 
               return shouldKeepTrying
                 ? this.fetchFromReddit(
-                    subreddit,
-                    lastKnownGif,
-                    remainingGifsToFetch
-                  )
+                  subreddit,
+                  lastKnownGif,
+                  remainingGifsToFetch
+                )
                 : EMPTY;
             })
           );
@@ -114,6 +118,7 @@ export class RedditService {
     this.error$.pipe(takeUntilDestroyed()).subscribe((error) =>
       this.state.update((state) => ({
         ...state,
+        loading: false,
         error,
       }))
     );
@@ -127,7 +132,7 @@ export class RedditService {
     return this.http
       .get<RedditResponse>(
         `https://www.reddit.com/r/${subreddit}/hot/.json?limit=100` +
-          (after ? `&after=${after}` : '')
+        (after ? `&after=${after}` : '')
       )
       .pipe(
         catchError((err) => {
